@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard | Planing.lk</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Outfit', sans-serif; }
+        body { background-color: #0f172a; color: #f8fafc; }
+        .admin-sidebar { width: 250px; background: #0b1121; height: 100vh; position: fixed; border-right: 1px solid rgba(255,255,255,0.1); padding: 2rem; }
+        .admin-sidebar h2 { color: #d4af37; margin-bottom: 2rem; font-size: 1.5rem; display: flex; align-items: center; gap: 0.5rem; }
+        .admin-nav { list-style: none; }
+        .admin-nav li { margin-bottom: 1rem; }
+        .admin-nav a { cursor: pointer; color: #cbd5e1; text-decoration: none; font-weight: 500; display: block; padding: 0.8rem; border-radius: 8px; transition: 0.3s; }
+        .admin-nav a:hover, .admin-nav a.active { background: rgba(212, 175, 55, 0.1); color: #d4af37; }
+        .admin-main { margin-left: 250px; padding: 3rem; }
+        .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; margin-bottom: 3rem; }
+        .stat-card { background: rgba(30, 41, 59, 0.7); padding: 1.5rem; border-radius: 15px; border: 1px solid rgba(255,255,255,0.05); }
+        .stat-card h3 { color: #cbd5e1; font-size: 1rem; margin-bottom: 0.5rem; }
+        .stat-card p { font-size: 2rem; color: #d4af37; font-weight: 700; }
+        .table-container { background: rgba(30, 41, 59, 0.7); border-radius: 15px; padding: 1.5rem; border: 1px solid rgba(255,255,255,0.05); overflow-x: auto; margin-bottom: 2rem; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 1rem; text-align: left; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        th { color: #d4af37; font-weight: 600; }
+        .badge { background: rgba(16, 185, 129, 0.2); color: #10b981; padding: 0.3rem 0.8rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; }
+        
+        /* Tabs */
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        
+        .form-group { margin-bottom: 1.5rem; }
+        .form-group label { display: block; margin-bottom: 0.5rem; color: #cbd5e1; }
+        .form-group input, .form-group textarea { width: 100%; padding: 0.8rem; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: #fff; }
+        .save-btn { padding: 10px 20px; background: #d4af37; color: #000; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <!-- Login Overlay -->
+    <div id="loginOverlay" style="position:fixed; top:0; left:0; width:100%; height:100%; background:#0f172a; z-index:9999; display:flex; justify-content:center; align-items:center; flex-direction:column;">
+        <h2 style="color:#d4af37; margin-bottom:1rem;"><i class="fa-solid fa-lock"></i> Admin Login</h2>
+        <input type="password" id="adminPassword" placeholder="Enter Password" style="padding:10px; border-radius:5px; border:1px solid #d4af37; background:transparent; color:#fff; margin-bottom:10px; outline:none; text-align:center;">
+        <button id="loginBtn" style="padding:10px 20px; background:#d4af37; color:#000; border:none; border-radius:5px; cursor:pointer; font-weight:bold;">Login</button>
+        <p id="loginError" style="color:#ef4444; margin-top:10px; display:none;">Incorrect Password!</p>
+    </div>
+
+    <div class="admin-sidebar">
+        <h2><i class="fa-solid fa-compass-drafting"></i> Admin</h2>
+        <ul class="admin-nav">
+            <li><a class="tab-link active" onclick="switchTab('dashboard')"><i class="fa-solid fa-chart-pie"></i> Dashboard</a></li>
+            <li><a class="tab-link" onclick="switchTab('analytics')"><i class="fa-solid fa-chart-line"></i> Analytics</a></li>
+            <li><a class="tab-link" onclick="switchTab('cms')"><i class="fa-solid fa-pen-to-square"></i> Edit Website</a></li>
+            <li><a href="/" target="_blank"><i class="fa-solid fa-globe"></i> View Site</a></li>
+            <li><a id="logoutBtn" style="color:#ef4444; margin-top:2rem;"><i class="fa-solid fa-right-from-bracket"></i> Logout</a></li>
+        </ul>
+    </div>
+    
+    <div class="admin-main">
+        <!-- Dashboard Tab -->
+        <div id="dashboard" class="tab-content active">
+            <h1>Dashboard Overview</h1><br>
+            <div class="stats-grid">
+                <div class="stat-card"><h3>Total Orders</h3><p id="totalOrders">0</p></div>
+                <div class="stat-card"><h3>Total Revenue</h3><p id="totalRevenue">Rs. 0</p></div>
+                <div class="stat-card"><h3>Top Plan</h3><p id="topPlan" style="font-size:1.2rem; margin-top:0.5rem">-</p></div>
+            </div>
+
+            <div class="table-container">
+                <h2 style="margin-bottom: 1rem;">Recent Orders</h2>
+                <table>
+                    <thead>
+                        <tr><th>Order ID</th><th>Customer</th><th>Plan Name</th><th>Amount</th><th>Status</th><th>Date</th></tr>
+                    </thead>
+                    <tbody id="ordersTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Analytics Tab -->
+        <div id="analytics" class="tab-content">
+            <h1>Business Analytics</h1><br>
+            <div class="table-container">
+                <h2 style="margin-bottom: 1rem;">Sales by Plan</h2>
+                <table>
+                    <thead>
+                        <tr><th>Plan Name</th><th>Total Sold</th></tr>
+                    </thead>
+                    <tbody id="analyticsTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- CMS Tab -->
+        <div id="cms" class="tab-content">
+            <h1>Manage Website Text</h1><br>
+            <div class="table-container" style="max-width: 600px;">
+                <div class="form-group">
+                    <label>Main Heading (Hero Title)</label>
+                    <input type="text" id="cmsTitle">
+                </div>
+                <div class="form-group">
+                    <label>Subtitle text (Hero Subtitle)</label>
+                    <textarea id="cmsSubtitle" rows="4"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Contact Email</label>
+                    <input type="text" id="cmsEmail">
+                </div>
+                <button class="save-btn" onclick="saveCMS()">Save Changes</button>
+                <p id="cmsSuccess" style="color:#10b981; margin-top:10px; display:none;">Saved successfully!</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let adminToken = localStorage.getItem('adminToken');
+        
+        document.getElementById('loginBtn').addEventListener('click', async () => {
+            const pwd = document.getElementById('adminPassword').value;
+            const res = await fetch('/api/admin/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ password: pwd })
+            });
+            const data = await res.json();
+            if(data.success) {
+                adminToken = data.token;
+                localStorage.setItem('adminToken', adminToken);
+                document.getElementById('loginOverlay').style.display = 'none';
+                loadAllData();
+            } else {
+                document.getElementById('loginError').style.display = 'block';
+            }
+        });
+
+        document.getElementById('logoutBtn').addEventListener('click', () => {
+            localStorage.removeItem('adminToken');
+            location.reload();
+        });
+
+        if(adminToken) {
+            document.getElementById('loginOverlay').style.display = 'none';
+            loadAllData();
+        }
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            document.querySelectorAll('.tab-link').forEach(l => l.classList.remove('active'));
+            event.currentTarget.classList.add('active');
+        }
+
+        async function loadAllData() {
+            try {
+                // Load Orders & CMS details
+                const response = await fetch('/api/admin/orders?token=' + adminToken);
+                if(response.status === 401) {
+                    localStorage.removeItem('adminToken');
+                    location.reload();
+                    return;
+                }
+                const data = await response.json();
+                
+                // Populate Dashboard
+                const orders = data.orders;
+                const tableBody = document.getElementById('ordersTableBody');
+                tableBody.innerHTML = ''; 
+                orders.forEach(order => {
+                    tableBody.innerHTML += `<tr><td>#${order.id}</td><td>${order.customerName}<br><small style="color:gray">${order.customerEmail}</small></td><td>${order.planName}</td><td>Rs. ${parseInt(order.price).toLocaleString()}</td><td><span class="badge">${order.status}</span></td><td>${new Date(order.date).toLocaleDateString()}</td></tr>`;
+                });
+
+                // Populate CMS
+                if(data.content) {
+                    document.getElementById('cmsTitle').value = data.content.heroTitle || '';
+                    document.getElementById('cmsSubtitle').value = data.content.heroSubtitle || '';
+                    document.getElementById('cmsEmail').value = data.content.contactEmail || '';
+                }
+
+                // Load Analytics
+                const analyticsRes = await fetch('/api/admin/analytics?token=' + adminToken);
+                const analytics = await analyticsRes.json();
+                
+                document.getElementById('totalOrders').textContent = analytics.totalOrders;
+                document.getElementById('totalRevenue').textContent = 'Rs. ' + analytics.totalRevenue.toLocaleString();
+                document.getElementById('topPlan').textContent = analytics.bestSellingPlan;
+
+                const aBody = document.getElementById('analyticsTableBody');
+                aBody.innerHTML = '';
+                for (const [plan, count] of Object.entries(analytics.planSalesCount)) {
+                    aBody.innerHTML += `<tr><td>${plan}</td><td>${count} Sold</td></tr>`;
+                }
+
+            } catch (error) {
+                console.error("Error loading admin data:", error);
+            }
+        }
+
+        async function saveCMS() {
+            const content = {
+                heroTitle: document.getElementById('cmsTitle').value,
+                heroSubtitle: document.getElementById('cmsSubtitle').value,
+                contactEmail: document.getElementById('cmsEmail').value
+            };
+
+            await fetch('/api/admin/content', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ token: adminToken, content })
+            });
+
+            document.getElementById('cmsSuccess').style.display = 'block';
+            setTimeout(() => document.getElementById('cmsSuccess').style.display = 'none', 3000);
+        }
+    </script>
+</body>
+</html>
